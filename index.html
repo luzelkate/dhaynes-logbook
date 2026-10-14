@@ -69,12 +69,69 @@ function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()
 function peso(n){return "₱"+Number(n).toLocaleString("en-PH")}
 function pr(e){return e.price||S.settings.price}
 function ut(){var l=S.entries.filter(function(e){return (e.type==="deliver"||e.type==="refill")&&!e.void&&!e.paid}).sort(function(a,b){return a.date<b.date?-1:1});var tot=l.reduce(function(a,e){return a+e.qty*pr(e)},0);return '<div class="panel"><b>All unpaid orders: '+peso(tot)+'</b>'+(l.length?l.map(function(e){return '<div class="item"><div class="n">'+esc(e.name||"Walk-in")+'<small>'+e.date+' · '+sz(e)+' · '+e.qty+' pc × ₱'+pr(e)+' = '+peso(e.qty*pr(e))+'</small></div><button class="pri" data-paid="'+e.id+'">Mark paid</button></div>'}).join(""):'<div class="empty">No unpaid orders.</div>')+'<div class="note">Tap "Mark paid" on the day the customer pays. The payment counts toward cash for that day.</div></div>'}
-function bkp(){var ta='width:100%;min-height:70px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:8px;font:13px system-ui;margin:8px 0';return '<div class="panel"><b>Backup</b><div class="note">Your data is saved only on this phone. Back it up often, especially before clearing browser data or changing phones.</div><div class="row" style="margin-top:8px"><button class="pri" id="dl">Download backup</button><button id="cp">Copy backup</button></div><div class="note">Restore: choose a backup file or paste the copied text, then tap Restore.</div><input type="file" id="bf" accept=".json,application/json" style="margin-top:6px"><textarea id="bk" style="'+ta+'" placeholder="Paste backup text here"></textarea><button id="rs">Restore from backup</button></div>'}
+var pend=null,XT="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+function xname(){return "Dhayne-Backup-"+today()+".xlsx"}
+function xesc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function xun(s){return String(s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&")}
+function xsheet(rows,widths){var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+if(widths)x+='<cols>'+widths.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'}).join("")+'</cols>';
+x+='<sheetData>'+rows.map(function(r,ri){return '<row r="'+(ri+1)+'">'+r.map(function(c,ci){if(c==null||c==="")return "";var s=0,v=c;if(typeof c==="object"){s=c.s;v=c.v}var ref=String.fromCharCode(65+ci)+(ri+1);return typeof v==="number"?'<c r="'+ref+'" s="'+s+'"><v>'+v+'</v></c>':'<c r="'+ref+'" s="'+s+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>'}).join("")+'</row>'}).join("")+'</sheetData></worksheet>';return x}
+var CT=null;
+function crc(b){if(!CT){CT=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;CT[n]=c>>>0}}var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zip(files){var enc=new TextEncoder(),parts=[],cd=[],off=0;
+files.forEach(function(f){var nm=enc.encode(f[0]),d=enc.encode(f[1]),cr=crc(d);
+var lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(12,0x21,true);lh.setUint32(14,cr,true);lh.setUint32(18,d.length,true);lh.setUint32(22,d.length,true);lh.setUint16(26,nm.length,true);
+parts.push(new Uint8Array(lh.buffer),nm,d);
+var ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(14,0x21,true);ch.setUint32(16,cr,true);ch.setUint32(20,d.length,true);ch.setUint32(24,d.length,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+cd.push(new Uint8Array(ch.buffer),nm);off+=30+nm.length+d.length});
+var cs=0;cd.forEach(function(x){cs+=x.length});
+var e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+return new Blob(parts.concat(cd,[new Uint8Array(e.buffer)]),{type:XT})}
+function xbook(){
+var H=function(a){return a.map(function(t){return{v:t,s:1}})},M=function(n){return{v:n,s:2}},yn=function(b){return b?"Yes":""},sa=function(e){return e.qty*pr(e)},isS=function(e){return e.type==="deliver"||e.type==="refill"};
+var ents=S.entries.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:a.ts-b.ts});
+var dates=[];ents.forEach(function(e){if(dates.indexOf(e.date)<0)dates.push(e.date)});
+var sm=[[{v:"Dhayne's Water Refilling Station - Backup",s:3}],["Saved on: "+new Date().toLocaleString("en-PH")],["One row per day. Profit = Sales - Expenses - Salary. Voided entries are not counted."],["Keep the last sheet (DATA). It is used to restore your records."],[],H(["Date","Delivered (pcs)","Refilled (pcs)","Sales","Cash collected","Still unpaid","Expenses","Salary","Profit"])],T=[0,0,0,0,0,0,0,0];
+dates.forEach(function(d){var L=function(t){return ents.filter(function(e){return e.date===d&&e.type===t&&!e.void})},dl=L("deliver"),rf=L("refill"),dq=0,rq=0,s=0,un=0,co=0,ex=0,sl=0;
+dl.forEach(function(e){dq+=e.qty});rf.forEach(function(e){rq+=e.qty});dl.concat(rf).forEach(function(e){s+=sa(e);if(!e.paid)un+=sa(e)});
+ents.forEach(function(e){if(isS(e)&&!e.void&&e.paid&&(e.paidDate||e.date)===d)co+=sa(e)});
+L("gastos").forEach(function(e){ex+=e.amt});L("sahod").forEach(function(e){sl+=e.amt});
+var v=[dq,rq,s,co,un,ex,sl,s-ex-sl];v.forEach(function(x,i){T[i]+=x});
+sm.push([d,dq,rq,M(s),M(co),M(un),M(ex),M(sl),M(s-ex-sl)])});
+sm.push([{v:"TOTAL",s:3},T[0],T[1],M(T[2]),M(T[3]),M(T[4]),M(T[5]),M(T[6]),M(T[7])]);
+var sale=function(t,nm){var r=[H(["Date","Customer","Size","Qty","Price each","Total","Paid?","Date paid","Voided?"])];ents.forEach(function(e){if(e.type===t)r.push([e.date,e.name||nm,sz(e),e.qty,M(pr(e)),M(sa(e)),e.paid?"Paid":"Unpaid",e.paid?(e.paidDate||e.date):"",yn(e.void)])});return r};
+var cost=function(t,h){var r=[H(["Date",h,"Amount","Voided?"])];ents.forEach(function(e){if(e.type===t)r.push([e.date,e.name||"",M(e.amt),yn(e.void)])});return r};
+var up=[H(["Date","Type","Customer","Size","Qty","Amount owed"])],ot=0;ents.forEach(function(e){if(isS(e)&&!e.void&&!e.paid){ot+=sa(e);up.push([e.date,e.type==="refill"?"Refill":"Deliver",e.name||"Walk-in",sz(e),e.qty,M(sa(e))])}});up.push([{v:"TOTAL OWED",s:3},"","","","",M(ot)]);
+var au=[H(["Date and time","Action","Details"])];S.audit.forEach(function(a){au.push([new Date(a.ts).toLocaleString("en-PH"),a.action,a.desc])});
+var js=JSON.stringify(S),da=[["DHAYNE_BACKUP_V1"]],i=0;while(i<js.length){var j=Math.min(i+20000,js.length);if(j<js.length&&js.charCodeAt(j-1)>=0xD800&&js.charCodeAt(j-1)<0xDC00)j--;da.push([js.slice(i,j)]);i=j}
+var sh=[["Summary",sm,[14,16,16,14,16,14,14,14,14]],["Deliveries",sale("deliver",""),[13,24,14,8,12,12,10,13,10]],["Refills",sale("refill","Walk-in"),[13,24,14,8,12,12,10,13,10]],["Expenses",cost("gastos","What for"),[13,30,14,10]],["Salary",cost("sahod","Who"),[13,30,14,10]],["Unpaid",up,[13,10,24,14,8,16]],["Audit Log",au,[22,18,70]],["DATA (do not edit)",da,[40]]];
+var ns='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',R='http://schemas.openxmlformats.org/officeDocument/2006/relationships',hd='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+var f=[["[Content_Types].xml",hd+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sh.map(function(x,k){return '<Override PartName="/xl/worksheets/sheet'+(k+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'}).join("")+'</Types>'],
+["_rels/.rels",hd+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="'+R+'/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+["xl/workbook.xml",hd+'<workbook '+ns+' xmlns:r="'+R+'"><sheets>'+sh.map(function(x,k){return '<sheet name="'+xesc(x[0])+'" sheetId="'+(k+1)+'" r:id="rId'+(k+1)+'"/>'}).join("")+'</sheets></workbook>'],
+["xl/_rels/workbook.xml.rels",hd+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sh.map(function(x,k){return '<Relationship Id="rId'+(k+1)+'" Type="'+R+'/worksheet" Target="worksheets/sheet'+(k+1)+'.xml"/>'}).join("")+'<Relationship Id="rId'+(sh.length+1)+'" Type="'+R+'/styles" Target="styles.xml"/></Relationships>'],
+["xl/styles.xml",hd+'<styleSheet '+ns+'><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;₱&quot;#,##0.00"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="13"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1450B8"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>']];
+sh.forEach(function(x,k){f.push(["xl/worksheets/sheet"+(k+1)+".xml",xsheet(x[1],x[2])])});
+return zip(f)}
+async function xread(buf){var u=new Uint8Array(buf),dv=new DataView(buf),i=u.length-22;while(i>=0&&dv.getUint32(i,true)!==0x06054b50)i--;if(i<0)throw 0;
+var n=dv.getUint16(i+10,true),p=dv.getUint32(i+16,true),files={},dec=new TextDecoder();
+for(var k=0;k<n;k++){var m=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true),nm=dec.decode(u.subarray(p+46,p+46+nl)),ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true);files[nm]={m:m,d:u.subarray(ds,ds+cs)};p+=46+nl+el+cl}
+return async function(nm){var f=files[nm];if(!f)return "";var b=f.d;if(f.m===8)b=new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());return dec.decode(b)}}
+async function xdata(get){var wb=await get("xl/workbook.xml"),rel=await get("xl/_rels/workbook.xml.rels"),path=null;
+(wb.match(/<sheet\b[^>]*>/g)||[]).forEach(function(t){var n=(t.match(/name="([^"]*)"/)||[])[1]||"",r=(t.match(/r:id="([^"]*)"/)||[])[1];if(n.indexOf("DATA")===0)(rel.match(/<Relationship\b[^>]*>/g)||[]).forEach(function(q){if((q.match(/\bId="([^"]*)"/)||[])[1]===r){var tg=(q.match(/Target="([^"]*)"/)||[])[1];path=tg.charAt(0)==="/"?tg.slice(1):"xl/"+tg}})});
+if(!path)throw 0;
+var sx=await get("xl/sharedStrings.xml"),ss=(sx.match(/<si\b[\s\S]*?<\/si>/g)||[]).map(function(si){return(si.match(/<t\b[^>]*>[\s\S]*?<\/t>/g)||[]).map(function(t){return t.replace(/<[^>]*>/g,"")}).join("")}),sh=await get(path),rows={};
+(sh.match(/<c\b[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g)||[]).forEach(function(c){var h=c.match(/^<c\b([^>]*?)\/?>/)[1],m=h.match(/\br="A(\d+)"/);if(!m)return;var t=(h.match(/\bt="(\w+)"/)||[])[1],v;if(t==="inlineStr")v=(c.match(/<t\b[^>]*>([\s\S]*?)<\/t>/)||[])[1];else{v=(c.match(/<v>([\s\S]*?)<\/v>/)||[])[1];if(t==="s")v=ss[+v]}if(v!=null)rows[+m[1]]=v});
+if(rows[1]!=="DHAYNE_BACKUP_V1")throw 0;
+var o=JSON.parse(xun(Object.keys(rows).map(Number).filter(function(k){return k>1}).sort(function(a,b){return a-b}).map(function(k){return rows[k]}).join("")));if(!o||!o.entries)throw 0;return o}
+function bkp(){var lb=S.settings.lastBackup?"Last backup: "+new Date(S.settings.lastBackup).toLocaleString("en-PH"):"No backup yet. Please make one today.";
+return '<div class="panel"><b>Backup (Excel file)</b><div class="note" style="margin:4px 0 10px">Your records are saved only on this phone. Save a backup every day, then send the file to yourself (Messenger, email, or Google Drive). You can open it in Excel to read everything.</div><div class="note"><b>'+lb+'</b></div><div class="row" style="margin-top:10px"><button class="pri" id="dl">Save backup to phone</button><button id="sh">Send backup</button></div><div id="bkmsg" class="note"></div></div>'+
+'<div class="panel"><b>Restore from backup</b><div class="note" style="margin:4px 0 10px">Use this if you changed phones or your records are gone. Step 1: choose your backup file (.xlsx). Step 2: tap Restore. This replaces what is on this phone now.</div><input type="file" id="bf" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><div id="bkmsg2" class="note" style="margin:8px 0"></div><button id="rs">Restore from backup</button></div>'}
+
 function sizeRow(chk){return '<div class="row"><select id="sz" aria-label="Size">'+S.settings.sizes.map(function(x){return '<option value="'+esc(x.n)+'"'+(x.n==="25L"?" selected":"")+'>'+esc(x.n)+' (₱'+x.p+')</option>'}).join("")+'</select>'+fld("pr","Price ₱","number","sm")+'</div><div class="row"><label style="display:flex;gap:8px;align-items:center;flex:1"><input type="checkbox" id="pd"'+(chk?' checked':'')+' style="width:20px;height:20px"> Already paid</label><button class="pri" id="go">Add</button></div>'}
 function sz(e){return e.size||"25L"}
 function sp(n){var f=S.settings.sizes.filter(function(x){return x.n===n})[0];return f?f.p:S.settings.price}
-function markChips(){var p=document.getElementById("pr");if(!p)return;document.querySelectorAll(".chip").forEach(function(b){b.className="chip"+(b.dataset.price===String(+p.value)?" pri":"")})}
-function fillPrice(){var s=document.getElementById("sz"),p=document.getElementById("pr"),n=document.getElementById("nm");if(!s||!p)return;p.value=S.cust[(n?n.value.trim().toLowerCase():"")+"|"+s.value]||sp(s.value);markChips()}
+function fillPrice(){var s=document.getElementById("sz"),p=document.getElementById("pr"),n=document.getElementById("nm");if(!s||!p)return;p.value=S.cust[(n?n.value.trim().toLowerCase():"")+"|"+s.value]||sp(s.value)}
 function pb(r){var m={},c={};live("deliver").concat(live("refill")).forEach(function(e){var k=(e.type==="refill"?"Refill ":"Deliver ")+sz(e)+" × ₱"+pr(e);m[k]=(m[k]||0)+e.qty*pr(e);c[k]=(c[k]||0)+e.qty});return Object.keys(m).map(function(k){return r(c[k]+" pc · "+esc(k),peso(m[k]))}).join("")}
 function log(action,desc){S.audit.unshift({ts:Date.now(),action:action,desc:desc})}
 function day(){return document.getElementById("date").value}
@@ -87,7 +144,7 @@ function find(id){return S.entries.filter(function(e){return e.id===id})[0]}
 function toggleVoid(id){var e=find(id);e.void=!e.void;log(e.void?"Voided":"Restored",(LBL[e.type]||e.type)+": "+(e.name||"")+" "+(e.qty||"")+" "+(e.amt||"")+" ("+e.date+")");save();render()}
 function togglePaid(id){var e=find(id);e.paid=!e.paid;e.paidDate=e.paid?today():null;log(e.paid?"Marked paid":"Back to unpaid",(e.name||"Walk-in")+" "+e.qty+" pc × ₱"+pr(e)+" (order: "+e.date+(e.paid?", paid on: "+e.paidDate:"")+")");save();render()}
 function fld(id,ph,type,cls){return '<input id="'+id+'" placeholder="'+ph+'" '+(type?'type="'+type+'" inputmode="numeric" min="0"':'')+' class="'+(cls||"")+'" aria-label="'+ph+'">'}
-function val(id){return document.getElementById(id).value.trim()}
+function val(id){var e=document.getElementById(id);return e?e.value.trim():""}
 function items(type,fn){var l=list(type);if(!l.length)return '<div class="empty">Nothing logged for this date.</div>';
 return l.map(function(e){return '<div class="item"><div class="n '+(e.void?"void":"")+'">'+fn(e)+'</div>'+
 '<button data-void="'+e.id+'" aria-label="'+(e.void?"Restore":"Void")+'">'+(e.void?"Restore":"Void")+'</button></div>'}).join("")}
@@ -101,7 +158,7 @@ items("refill",function(e){return esc(e.name||"Walk-in")+' <button class="tag '+
 '<div class="item"><div class="n"><b>Total refill</b><small>'+peso(sum("refill",function(e){return e.qty*pr(e)}))+'</small></div><span class="q">'+sum("refill")+'</span></div></div>'}
 if(tab==="deliver"){
 h='<div class="panel"><div class="row">'+fld("nm","Customer / store name")+fld("q","Qty","number","sm")+'</div>'+
-'<div class="row"><select id="sz" aria-label="Size">'+S.settings.sizes.map(function(x){return '<option value="'+esc(x.n)+'"'+(x.n==="25L"?" selected":"")+'>'+esc(x.n)+' (₱'+x.p+')</option>'}).join("")+'</select>'+fld("pr","Price ₱","number","sm")+'</div><div class="row" id="chips" style="margin:0"></div><div class="row"><label style="display:flex;gap:8px;align-items:center;flex:1"><input type="checkbox" id="pd" style="width:20px;height:20px"> Already paid</label><button class="pri" id="go">Add</button></div></div><div class="panel">'+
+'<div class="row"><select id="sz" aria-label="Size">'+S.settings.sizes.map(function(x){return '<option value="'+esc(x.n)+'"'+(x.n==="25L"?" selected":"")+'>'+esc(x.n)+' (₱'+x.p+')</option>'}).join("")+'</select>'+fld("pr","Price ₱","number","sm")+'</div><div class="row"><label style="display:flex;gap:8px;align-items:center;flex:1"><input type="checkbox" id="pd" style="width:20px;height:20px"> Already paid</label><button class="pri" id="go">Add</button></div></div><div class="panel">'+
 items("deliver",function(e){return esc(e.name)+' <button class="tag '+(e.paid?"pd":"ut")+'" data-paid="'+e.id+'" style="background:none">'+(e.paid?"paid":"unpaid")+'</button><small>'+esc(sz(e))+' · '+peso(pr(e))+' × '+e.qty+' = '+peso(e.qty*pr(e))+'</small>'}).replace(/<span/g,"<span")+
 '<div class="item"><div class="n"><b>Total delivered</b></div><span class="q">'+sum("deliver")+'</span></div></div>'}
 if(tab==="gastos"){
@@ -125,36 +182,26 @@ ut()+bkp()+'<div class="panel"><div class="row"><div><div class="note">Sizes and
 if(tab==="audit"){
 h='<div class="panel"><div class="note">Every addition, void, and change is recorded here. Voiding an entry never removes its record.</div>'+
 (S.audit.length?S.audit.slice(0,150).map(function(a){return '<div class="aud"><time>'+new Date(a.ts).toLocaleString("en-PH")+'</time><b>'+esc(a.action)+'</b> · '+esc(a.desc)+'</div>'}).join(""):'<div class="empty">No records yet.</div>')+'</div>'}
-document.getElementById("view").innerHTML=h;if(tab==="deliver"||tab==="refill")fillPrice()}
+document.getElementById("view").innerHTML=h;if(tab==="deliver")fillPrice()}
 document.addEventListener("click",function(ev){var t=ev.target;
-if(t.dataset.price){document.getElementById("pr").value=t.dataset.price;markChips();return}
 if(t.dataset.tab){tab=t.dataset.tab;render();return}
 if(t.dataset.void){toggleVoid(+t.dataset.void);return}
 if(t.dataset.paid){togglePaid(+t.dataset.paid);return}
-if(t.id==="go"){
-var q=document.getElementById("q")?(+val("q")||0):0;
-var a=document.getElementById("a")?(+val("a")||0):0;
-var nm=document.getElementById("nm")?val("nm"):"";
-if((tab==="refill"&&q>0)||(tab==="deliver"&&q>0&&nm)){
-  var zz=val("sz"),pp=+val("pr")||sp(zz);
-  S.cust[nm.toLowerCase()+"|"+zz]=pp;
-  var pk=document.getElementById("pd").checked;
-  add(tab,{name:nm,qty:q,size:zz,price:pp,paid:pk,paidDate:pk?day():null});
-} else if((tab==="gastos"||tab==="sahod")&&a>0){
-  add(tab,{name:nm,amt:a});
-}}
-if(t.id==="dl"){try{var b=new Blob([JSON.stringify(S)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="dhaynes-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();t.textContent="Downloaded"}catch(e){t.textContent="Use Copy backup"}}
-if(t.id==="cp"){var tx=JSON.stringify(S);try{navigator.clipboard.writeText(tx).then(function(){t.textContent="Copied"},function(){document.getElementById("bk").value=tx;t.textContent="Copy from box"})}catch(e){document.getElementById("bk").value=tx;t.textContent="Copy from box"}}
-if(t.id==="rs"){try{var o=JSON.parse(val("bk"));if(o&&o.entries){o.settings=o.settings||{price:30};if(!o.settings.sizes)o.settings.sizes=[{n:"7L pababa",p:10},{n:"8-10L",p:15},{n:"25L",p:30,a:[35,45]}];o.cust=o.cust||{};o.audit=o.audit||[];S=o;log("Restore","Restored from backup");save();render()}else t.textContent="Not a valid backup"}catch(e){t.textContent="Not a valid backup"}}
+if(t.id==="go"){var q=+val("q")||0,a=document.getElementById("a")?+val("a")||0:0,nm=document.getElementById("nm")?val("nm"):"";
+if((tab==="refill"&&q>0)||(tab==="deliver"&&q>0&&nm)){var zz=val("sz"),pp=+val("pr")||sp(zz);S.cust[nm.toLowerCase()+"|"+zz]=pp;var pk=document.getElementById("pd").checked;add(tab,{name:nm,qty:q,size:zz,price:pp,paid:pk,paidDate:pk?day():null})}
+else if((tab==="gastos"||tab==="sahod")&&a>0)add(tab,{name:nm,amt:a})}
+if(t.id==="dl"){try{var b=xbook(),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download=xname();document.body.appendChild(l);l.click();l.remove();S.settings.lastBackup=Date.now();save();document.getElementById("bkmsg").textContent="Saved! Look for "+xname()+" in your Downloads folder. Now send it to yourself.";}catch(e){document.getElementById("bkmsg").textContent="Could not save the file. Please try again."}}
+if(t.id==="sh"){try{var f=new File([xbook()],xname(),{type:XT});if(navigator.canShare&&navigator.canShare({files:[f]})){S.settings.lastBackup=Date.now();save();navigator.share({files:[f],title:"Dhayne's backup"}).catch(function(){})}else document.getElementById("bkmsg").textContent="Sending is not available here. Tap Save backup to phone, then send the file from your Files app."}catch(e){document.getElementById("bkmsg").textContent="Sending is not available here. Tap Save backup to phone instead."}}
+if(t.id==="rs"){var m2=document.getElementById("bkmsg2");if(!pend){m2.textContent="Please choose your backup file first."}else{var o=pend;o.settings=o.settings||{price:30};if(!o.settings.sizes)o.settings.sizes=[{n:"7L pababa",p:10},{n:"8-10L",p:15},{n:"25L",p:30}];o.cust=o.cust||{};o.audit=o.audit||[];S=o;pend=null;log("Restore","Restored from backup");save();render()}}
 if(t.id==="seed"){var d="2026-10-13";document.getElementById("date").value=d;
 [10,10,25,25,50].forEach(function(q){add("refill",{qty:q})});
 [["Cerrera",1,1],["Lita",2,1],["Malou",1,1],["Marissa",6,1],["Tindahan",5,1],["Pilapil",4,1],["Eric",1,1],["Day care",3,1],["Only",1,0],["Pilapil (libal)",2,0],["Asjun",2,0],["Tesda",12,1]].forEach(function(x){add("deliver",{name:x[0],qty:x[1],paid:!!x[2]})});
 add("gastos",{name:"Expenses (from notebook)",amt:200});add("sahod",{name:"Salary (guess, please edit)",amt:400});tab="buod";render()}
 if(t.id==="reset"&&t.dataset.sure!=="1"){t.dataset.sure="1";t.textContent="Tap again to confirm";return}
 if(t.id==="reset"){S.entries=[];log("Reset","Deleted all entries");save();render()}});
-document.addEventListener("change",function(ev){if(ev.target.id==="bf"&&ev.target.files[0]){var fr=new FileReader();fr.onload=function(){document.getElementById("bk").value=fr.result};fr.readAsText(ev.target.files[0])}if(ev.target.id==="sz")fillPrice();if(ev.target.id==="tiers"){var t=ev.target.value.split(",").map(function(x){var a=x.split("="),v=(a[1]||"").split("/").map(function(y){return +y.trim()}).filter(function(y){return y>0});return{n:a[0].trim(),p:v[0]||0,a:v.slice(1)}}).filter(function(x){return x.n&&x.p>0});if(t.length){var f=function(l){return l.map(function(x){return x.n+"=₱"+x.p}).join("/")};log("Prices",f(S.settings.sizes)+" → "+f(t));S.settings.sizes=t;save();render()}}});
+document.addEventListener("change",function(ev){if(ev.target.id==="bf"){var fl=ev.target.files[0],mm=document.getElementById("bkmsg2");pend=null;if(fl){mm.textContent="Reading file...";fl.arrayBuffer().then(xread).then(xdata).then(function(o){pend=o;mm.textContent="Backup found with "+o.entries.length+" records. Now tap Restore."}).catch(function(){mm.textContent="This is not a Dhayne backup file. Please choose the .xlsx file you saved from this app."})}}if(ev.target.id==="sz")fillPrice();if(ev.target.id==="tiers"){var t=ev.target.value.split(",").map(function(x){var a=x.split("="),v=(a[1]||"").split("/").map(function(y){return +y.trim()}).filter(function(y){return y>0});return{n:a[0].trim(),p:v[0]||0,a:v.slice(1)}}).filter(function(x){return x.n&&x.p>0});if(t.length){var f=function(l){return l.map(function(x){return x.n+"=₱"+x.p}).join("/")};log("Prices",f(S.settings.sizes)+" → "+f(t));S.settings.sizes=t;save();render()}}});
 document.getElementById("date").addEventListener("change",render);
-document.addEventListener("input",function(ev){if(ev.target.id==="nm")fillPrice();if(ev.target.id==="pr")markChips()});
+document.addEventListener("input",function(ev){if(ev.target.id==="nm")fillPrice()});
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 load();document.getElementById("date").value=today();render();
 </script>
