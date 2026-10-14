@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1450b8"><link rel="apple-touch-icon" href="icon-192.png">
+<title>Dhayne's Water Refilling Station</title>
+<style>
+:root{--bg:#eef5ff;--card:#fff;--ink:#0d2247;--mute:#5d7196;--line:#d5e4fb;--blue:#1e6fe8;--deep:#0a2a63;--aqua:#35c4e6;--red:#d6455a;--green:#12996f;--shadow:0 6px 20px rgba(30,111,232,.12);box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1730;--card:#11264a;--ink:#e6efff;--mute:#8fa6cf;--line:#1d3763;--blue:#5b9bff;--deep:#06122b;--aqua:#46d0ef;--red:#ff8597;--green:#4fd9ae;--shadow:0 6px 20px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0a1730;--card:#11264a;--ink:#e6efff;--mute:#8fa6cf;--line:#1d3763;--blue:#5b9bff;--deep:#06122b;--aqua:#46d0ef;--red:#ff8597;--green:#4fd9ae;--shadow:0 6px 20px rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif}
+.hero{background:linear-gradient(160deg,var(--deep) 0%,#1450b8 60%,var(--blue) 100%);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 0;position:relative}
+.hero .in{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px;justify-content:space-between;padding-bottom:22px}
+.brand{display:flex;align-items:center;gap:10px}
+.sub{font-size:12.5px;font-weight:600;opacity:.88;margin-top:-3px}
+.brand svg{width:34px;height:34px;flex:none}
+h1{font:600 26px ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;margin:0;letter-spacing:.2px}
+#date{width:150px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;color-scheme:dark;border-radius:99px;padding:7px 12px;font-weight:600}
+.wave{display:block;width:100%;height:22px;margin-bottom:-1px}
+.wave path{fill:var(--bg)}
+main{max-width:560px;margin:0 auto;padding:6px 16px 110px}
+input,select,button{font:inherit;color:var(--ink)}
+select,input{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0;width:100%}
+input:focus,select:focus{border-color:var(--aqua);outline:3px solid rgba(53,196,230,.3)}
+button{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 14px;cursor:pointer;font-weight:600}
+button:focus-visible{outline:3px solid var(--aqua);outline-offset:1px}
+button.pri{background:linear-gradient(135deg,var(--blue),#1450b8);color:#fff;border:0;font-weight:700;box-shadow:0 4px 12px rgba(30,111,232,.35)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;max-width:560px;margin:0 auto;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--card);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(30,111,232,.14)}
+.tabs button{border:0;background:none;padding:8px 0;font-size:13px;color:var(--mute);border-radius:12px}
+.tabs button[aria-selected=true]{background:var(--blue);color:#fff}
+.panel{background:var(--card);border-radius:18px;padding:14px 16px;margin:14px 0;box-shadow:var(--shadow)}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row>*{flex:1}.row .sm{flex:0 0 84px}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border:0}
+.item .n{flex:1;min-width:0}.item .n small{display:block;color:var(--mute)}
+.q{font:600 18px ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;min-width:34px;text-align:right;color:var(--blue)}
+.void{text-decoration:line-through;opacity:.5}
+.tag{font-size:12px;padding:1px 10px;border-radius:99px;border:1.5px solid}
+.pd{color:var(--green);border-color:var(--green)}.ut{color:var(--red);border-color:var(--red)}
+.sum{width:100%;border-collapse:collapse}
+.sum td{padding:6px 0}.sum td:last-child{text-align:right;font-weight:700}
+.sum tr.t td{border-top:2px dashed var(--line);font:600 28px ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;padding-top:12px}
+.neg{color:var(--red)}.pos{color:var(--green)}
+.aud{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.aud time{color:var(--mute);display:block;font-size:12px}
+.chip{padding:6px 14px;border-radius:99px;font-weight:700}
+.empty{color:var(--mute);padding:8px 0}
+.note{font-size:13px;color:var(--mute)}
+@media (max-width:380px){.tabs button{font-size:11px}h1{font-size:22px}#date{width:128px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="in"><div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C16 3 6 14 6 20a10 10 0 0 0 20 0C26 14 16 3 16 3Z" fill="#fff"/><path d="M11 20a5 5 0 0 0 5 5" stroke="#35c4e6" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg><div><h1>Dhayne's</h1><div class="sub">Water Refilling Station</div></div></div><input type="date" id="date" aria-label="Date"></div>
+<svg class="wave" viewBox="0 0 400 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11C50 0 100 22 160 11S280 0 340 11 400 14 400 11V22H0Z"/></svg></header>
+<main><div id="view"></div></main>
+<nav class="tabs" role="tablist" id="tabs"></nav>
+<script>
+var TABS=[["refill","Refill"],["deliver","Deliver"],["gastos","Expenses"],["sahod","Salary"],["buod","Summary"],["audit","Audit"]];
+var LBL={refill:"Refill",deliver:"Deliver",gastos:"Expenses",sahod:"Salary"};
+var S={settings:{price:30},entries:[],audit:[]},tab="deliver",KEY="refill-logbook-v1";
+function load(){try{var r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}S.settings=S.settings||{price:30};if(!S.settings.tiers)S.settings.tiers=[30,35,45];if(!S.settings.sizes)S.settings.sizes=[{n:"7L pababa",p:10},{n:"8-10L",p:15},{n:"25L",p:30,a:[35,45]}];S.settings.sizes.forEach(function(x){if(x.n==="25L"&&!x.a)x.a=[35,45]});if(!S.cust)S.cust={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function peso(n){return "₱"+Number(n).toLocaleString("en-PH")}
+function pr(e){return e.price||S.settings.price}
+function ut(){var l=S.entries.filter(function(e){return (e.type==="deliver"||e.type==="refill")&&!e.void&&!e.paid}).sort(function(a,b){return a.date<b.date?-1:1});var tot=l.reduce(function(a,e){return a+e.qty*pr(e)},0);return '<div class="panel"><b>All unpaid orders: '+peso(tot)+'</b>'+(l.length?l.map(function(e){return '<div class="item"><div class="n">'+esc(e.name||"Walk-in")+'<small>'+e.date+' · '+sz(e)+' · '+e.qty+' pc × ₱'+pr(e)+' = '+peso(e.qty*pr(e))+'</small></div><button class="pri" data-paid="'+e.id+'">Mark paid</button></div>'}).join(""):'<div class="empty">No unpaid orders.</div>')+'<div class="note">Tap "Mark paid" on the day the customer pays. The payment counts toward cash for that day.</div></div>'}
+function bkp(){var ta='width:100%;min-height:70px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:8px;font:13px system-ui;margin:8px 0';return '<div class="panel"><b>Backup</b><div class="note">Your data is saved only on this phone. Back it up often, especially before clearing browser data or changing phones.</div><div class="row" style="margin-top:8px"><button class="pri" id="dl">Download backup</button><button id="cp">Copy backup</button></div><div class="note">Restore: choose a backup file or paste the copied text, then tap Restore.</div><input type="file" id="bf" accept=".json,application/json" style="margin-top:6px"><textarea id="bk" style="'+ta+'" placeholder="Paste backup text here"></textarea><button id="rs">Restore from backup</button></div>'}
+function sizeRow(chk){return '<div class="row"><select id="sz" aria-label="Size">'+S.settings.sizes.map(function(x){return '<option value="'+esc(x.n)+'"'+(x.n==="25L"?" selected":"")+'>'+esc(x.n)+' (₱'+x.p+')</option>'}).join("")+'</select>'+fld("pr","Price ₱","number","sm")+'</div><div class="row"><label style="display:flex;gap:8px;align-items:center;flex:1"><input type="checkbox" id="pd"'+(chk?' checked':'')+' style="width:20px;height:20px"> Already paid</label><button class="pri" id="go">Add</button></div>'}
+function sz(e){return e.size||"25L"}
+function sp(n){var f=S.settings.sizes.filter(function(x){return x.n===n})[0];return f?f.p:S.settings.price}
+function markChips(){var p=document.getElementById("pr");if(!p)return;document.querySelectorAll(".chip").forEach(function(b){b.className="chip"+(b.dataset.price===String(+p.value)?" pri":"")})}
+function fillPrice(){var s=document.getElementById("sz"),p=document.getElementById("pr"),n=document.getElementById("nm");if(!s||!p)return;p.value=S.cust[(n?n.value.trim().toLowerCase():"")+"|"+s.value]||sp(s.value);markChips()}
+function pb(r){var m={},c={};live("deliver").concat(live("refill")).forEach(function(e){var k=(e.type==="refill"?"Refill ":"Deliver ")+sz(e)+" × ₱"+pr(e);m[k]=(m[k]||0)+e.qty*pr(e);c[k]=(c[k]||0)+e.qty});return Object.keys(m).map(function(k){return r(c[k]+" pc · "+esc(k),peso(m[k]))}).join("")}
+function log(action,desc){S.audit.unshift({ts:Date.now(),action:action,desc:desc})}
+function day(){return document.getElementById("date").value}
+function list(type){return S.entries.filter(function(e){return e.date===day()&&e.type===type})}
+function live(type){return list(type).filter(function(e){return !e.void})}
+function sum(type,f){return live(type).reduce(function(a,e){return a+(f?f(e):e.qty||0)},0)}
+function add(type,o){o.id=Date.now()+Math.random();o.date=day();o.type=type;o.ts=Date.now();o.void=false;S.entries.push(o);
+log("Added",(LBL[type]||type)+": "+(o.name?o.name+" ":"")+(o.qty?o.qty+" pc ":"")+(o.size?o.size+" ":"")+(o.price?"@₱"+o.price+" ":"")+(o.amt?peso(o.amt):"")+" ("+o.date+")");save();render()}
+function find(id){return S.entries.filter(function(e){return e.id===id})[0]}
+function toggleVoid(id){var e=find(id);e.void=!e.void;log(e.void?"Voided":"Restored",(LBL[e.type]||e.type)+": "+(e.name||"")+" "+(e.qty||"")+" "+(e.amt||"")+" ("+e.date+")");save();render()}
+function togglePaid(id){var e=find(id);e.paid=!e.paid;e.paidDate=e.paid?today():null;log(e.paid?"Marked paid":"Back to unpaid",(e.name||"Walk-in")+" "+e.qty+" pc × ₱"+pr(e)+" (order: "+e.date+(e.paid?", paid on: "+e.paidDate:"")+")");save();render()}
+function fld(id,ph,type,cls){return '<input id="'+id+'" placeholder="'+ph+'" '+(type?'type="'+type+'" inputmode="numeric" min="0"':'')+' class="'+(cls||"")+'" aria-label="'+ph+'">'}
+function val(id){return document.getElementById(id).value.trim()}
+function items(type,fn){var l=list(type);if(!l.length)return '<div class="empty">Nothing logged for this date.</div>';
+return l.map(function(e){return '<div class="item"><div class="n '+(e.void?"void":"")+'">'+fn(e)+'</div>'+
+'<button data-void="'+e.id+'" aria-label="'+(e.void?"Restore":"Void")+'">'+(e.void?"Restore":"Void")+'</button></div>'}).join("")}
+function render(){
+var tb=document.getElementById("tabs");
+tb.innerHTML=TABS.map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+'</button>'}).join("");
+var h="";
+if(tab==="refill"){
+h='<div class="panel"><div class="row">'+fld("nm","Customer (optional)")+fld("q","Qty","number","sm")+'</div>'+sizeRow(true)+'<div class="note">Refill = containers brought in and refilled at the station.</div></div><div class="panel">'+
+items("refill",function(e){return esc(e.name||"Walk-in")+' <button class="tag '+(e.paid?"pd":"ut")+'" data-paid="'+e.id+'" style="background:none">'+(e.paid?"paid":"unpaid")+'</button><small>'+esc(sz(e))+' · '+peso(pr(e))+' × '+e.qty+' = '+peso(e.qty*pr(e))+'</small>'})+
+'<div class="item"><div class="n"><b>Total refill</b><small>'+peso(sum("refill",function(e){return e.qty*pr(e)}))+'</small></div><span class="q">'+sum("refill")+'</span></div></div>'}
+if(tab==="deliver"){
+h='<div class="panel"><div class="row">'+fld("nm","Customer / store name")+fld("q","Qty","number","sm")+'</div>'+
+'<div class="row"><select id="sz" aria-label="Size">'+S.settings.sizes.map(function(x){return '<option value="'+esc(x.n)+'"'+(x.n==="25L"?" selected":"")+'>'+esc(x.n)+' (₱'+x.p+')</option>'}).join("")+'</select>'+fld("pr","Price ₱","number","sm")+'</div><div class="row" id="chips" style="margin:0"></div><div class="row"><label style="display:flex;gap:8px;align-items:center;flex:1"><input type="checkbox" id="pd" style="width:20px;height:20px"> Already paid</label><button class="pri" id="go">Add</button></div></div><div class="panel">'+
+items("deliver",function(e){return esc(e.name)+' <button class="tag '+(e.paid?"pd":"ut")+'" data-paid="'+e.id+'" style="background:none">'+(e.paid?"paid":"unpaid")+'</button><small>'+esc(sz(e))+' · '+peso(pr(e))+' × '+e.qty+' = '+peso(e.qty*pr(e))+'</small>'}).replace(/<span/g,"<span")+
+'<div class="item"><div class="n"><b>Total delivered</b></div><span class="q">'+sum("deliver")+'</span></div></div>'}
+if(tab==="gastos"){
+h='<div class="panel"><div class="row">'+fld("nm","What for (e.g. fuel)")+fld("a","₱","number","sm")+'</div><button class="pri" id="go" style="width:100%">Add</button></div><div class="panel">'+
+items("gastos",function(e){return esc(e.name||"Expense")+'<small>'+peso(e.amt)+'</small>'})+
+'<div class="item"><div class="n"><b>Total expenses</b></div><span class="q">'+peso(sum("gastos",function(e){return e.amt}))+'</span></div></div>'}
+if(tab==="sahod"){
+h='<div class="panel"><div class="row">'+fld("nm","Who (e.g. driver)")+fld("a","₱","number","sm")+'</div><button class="pri" id="go" style="width:100%">Add</button></div><div class="panel">'+
+items("sahod",function(e){return esc(e.name||"Salary")+'<small>'+peso(e.amt)+'</small>'})+
+'<div class="item"><div class="n"><b>Total salary</b></div><span class="q">'+peso(sum("sahod",function(e){return e.amt}))+'</span></div></div>'}
+if(tab==="buod"){
+var dq=sum("deliver"),sd=sum("deliver",function(e){return e.qty*pr(e)}),sr=sum("refill",function(e){return e.qty*pr(e)}),benta=sd+sr,bayad=sum("deliver",function(e){return e.paid?e.qty*pr(e):0})+sum("refill",function(e){return e.paid?e.qty*pr(e):0}),
+g=sum("gastos",function(e){return e.amt}),s=sum("sahod",function(e){return e.amt}),net=benta-g-s,col=S.entries.filter(function(e){return (e.type==="deliver"||e.type==="refill")&&!e.void&&e.paid&&(e.paidDate||e.date)===day()}).reduce(function(a,e){return a+e.qty*pr(e)},0),cash=col-g-s,rf=sum("refill");
+function r(l,v,c){return '<tr><td>'+l+'</td><td class="'+(c||"")+'">'+v+'</td></tr>'}
+h='<div class="panel"><table class="sum">'+r("Delivered",dq+" pc")+r("Refilled",rf+" pc")+pb(r)+r("Sales",peso(benta))+
+r("− Expenses",peso(g))+r("− Salary",peso(s))+'<tr class="t"><td>Profit</td><td class="'+(net<0?"neg":"pos")+'">'+peso(net)+'</td></tr></table></div>'+
+'<div class="panel"><table class="sum">'+r("Paid",peso(bayad),"pos")+r("Still unpaid",peso(benta-bayad),benta-bayad?"neg":"")+r("Collected today (incl. past unpaid)",peso(col))+r("Cash on hand (collected − expenses − salary)",peso(cash),cash<0?"neg":"")+
+r("Delivery sales",peso(sd))+r("Refill sales",peso(sr))+'</table></div>'+
+ut()+bkp()+'<div class="panel"><div class="row"><div><div class="note">Sizes and prices, separated by commas. Use / for extra price choices. Example: 25L=30/35/45</div><input id="tiers" value="'+esc(S.settings.sizes.map(function(x){return x.n+'='+[x.p].concat(x.a||[]).join('/')}).join(', '))+'"></div></div>'+
+'<div class="row"><button id="seed">Load sample (Oct 13)</button><button id="reset">Delete all</button></div></div>'}
+if(tab==="audit"){
+h='<div class="panel"><div class="note">Every addition, void, and change is recorded here. Voiding an entry never removes its record.</div>'+
+(S.audit.length?S.audit.slice(0,150).map(function(a){return '<div class="aud"><time>'+new Date(a.ts).toLocaleString("en-PH")+'</time><b>'+esc(a.action)+'</b> · '+esc(a.desc)+'</div>'}).join(""):'<div class="empty">No records yet.</div>')+'</div>'}
+document.getElementById("view").innerHTML=h;if(tab==="deliver"||tab==="refill")fillPrice()}
+document.addEventListener("click",function(ev){var t=ev.target;
+if(t.dataset.price){document.getElementById("pr").value=t.dataset.price;markChips();return}
+if(t.dataset.tab){tab=t.dataset.tab;render();return}
+if(t.dataset.void){toggleVoid(+t.dataset.void);return}
+if(t.dataset.paid){togglePaid(+t.dataset.paid);return}
+if(t.id==="go"){var q=+val("q")||0,a=document.getElementById("a")?+val("a")||0:0,nm=document.getElementById("nm")?val("nm"):"";
+if((tab==="refill"&&q>0)||(tab==="deliver"&&q>0&&nm)){var zz=val("sz"),pp=+val("pr")||sp(zz);S.cust[nm.toLowerCase()+"|"+zz]=pp;var pk=document.getElementById("pd").checked;add(tab,{name:nm,qty:q,size:zz,price:pp,paid:pk,paidDate:pk?day():null})}
+else if((tab==="gastos"||tab==="sahod")&&a>0)add(tab,{name:nm,amt:a})}
+if(t.id==="dl"){try{var b=new Blob([JSON.stringify(S)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="dhaynes-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();t.textContent="Downloaded"}catch(e){t.textContent="Use Copy backup"}}
+if(t.id==="cp"){var tx=JSON.stringify(S);try{navigator.clipboard.writeText(tx).then(function(){t.textContent="Copied"},function(){document.getElementById("bk").value=tx;t.textContent="Copy from box"})}catch(e){document.getElementById("bk").value=tx;t.textContent="Copy from box"}}
+if(t.id==="rs"){try{var o=JSON.parse(val("bk"));if(o&&o.entries){o.settings=o.settings||{price:30};if(!o.settings.sizes)o.settings.sizes=[{n:"7L pababa",p:10},{n:"8-10L",p:15},{n:"25L",p:30,a:[35,45]}];o.cust=o.cust||{};o.audit=o.audit||[];S=o;log("Restore","Restored from backup");save();render()}else t.textContent="Not a valid backup"}catch(e){t.textContent="Not a valid backup"}}
+if(t.id==="seed"){var d="2026-10-13";document.getElementById("date").value=d;
+[10,10,25,25,50].forEach(function(q){add("refill",{qty:q})});
+[["Cerrera",1,1],["Lita",2,1],["Malou",1,1],["Marissa",6,1],["Tindahan",5,1],["Pilapil",4,1],["Eric",1,1],["Day care",3,1],["Only",1,0],["Pilapil (libal)",2,0],["Asjun",2,0],["Tesda",12,1]].forEach(function(x){add("deliver",{name:x[0],qty:x[1],paid:!!x[2]})});
+add("gastos",{name:"Expenses (from notebook)",amt:200});add("sahod",{name:"Salary (guess, please edit)",amt:400});tab="buod";render()}
+if(t.id==="reset"&&t.dataset.sure!=="1"){t.dataset.sure="1";t.textContent="Tap again to confirm";return}
+if(t.id==="reset"){S.entries=[];log("Reset","Deleted all entries");save();render()}});
+document.addEventListener("change",function(ev){if(ev.target.id==="bf"&&ev.target.files[0]){var fr=new FileReader();fr.onload=function(){document.getElementById("bk").value=fr.result};fr.readAsText(ev.target.files[0])}if(ev.target.id==="sz")fillPrice();if(ev.target.id==="tiers"){var t=ev.target.value.split(",").map(function(x){var a=x.split("="),v=(a[1]||"").split("/").map(function(y){return +y.trim()}).filter(function(y){return y>0});return{n:a[0].trim(),p:v[0]||0,a:v.slice(1)}}).filter(function(x){return x.n&&x.p>0});if(t.length){var f=function(l){return l.map(function(x){return x.n+"=₱"+x.p}).join("/")};log("Prices",f(S.settings.sizes)+" → "+f(t));S.settings.sizes=t;save();render()}}});
+document.getElementById("date").addEventListener("change",render);
+document.addEventListener("input",function(ev){if(ev.target.id==="nm")fillPrice();if(ev.target.id==="pr")markChips()});
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+load();document.getElementById("date").value=today();render();
+</script>
+</body>
+</html>
