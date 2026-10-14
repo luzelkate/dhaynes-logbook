@@ -131,9 +131,18 @@ if(t.dataset.price){document.getElementById("pr").value=t.dataset.price;markChip
 if(t.dataset.tab){tab=t.dataset.tab;render();return}
 if(t.dataset.void){toggleVoid(+t.dataset.void);return}
 if(t.dataset.paid){togglePaid(+t.dataset.paid);return}
-if(t.id==="go"){var q=+val("q")||0,a=document.getElementById("a")?+val("a")||0:0,nm=document.getElementById("nm")?val("nm"):"";
-if((tab==="refill"&&q>0)||(tab==="deliver"&&q>0&&nm)){var zz=val("sz"),pp=+val("pr")||sp(zz);S.cust[nm.toLowerCase()+"|"+zz]=pp;var pk=document.getElementById("pd").checked;add(tab,{name:nm,qty:q,size:zz,price:pp,paid:pk,paidDate:pk?day():null})}
-else if((tab==="gastos"||tab==="sahod")&&a>0)add(tab,{name:nm,amt:a})}
+if(t.id==="go"){
+var q=document.getElementById("q")?(+val("q")||0):0;
+var a=document.getElementById("a")?(+val("a")||0):0;
+var nm=document.getElementById("nm")?val("nm"):"";
+if((tab==="refill"&&q>0)||(tab==="deliver"&&q>0&&nm)){
+  var zz=val("sz"),pp=+val("pr")||sp(zz);
+  S.cust[nm.toLowerCase()+"|"+zz]=pp;
+  var pk=document.getElementById("pd").checked;
+  add(tab,{name:nm,qty:q,size:zz,price:pp,paid:pk,paidDate:pk?day():null});
+} else if((tab==="gastos"||tab==="sahod")&&a>0){
+  add(tab,{name:nm,amt:a});
+}}
 if(t.id==="dl"){try{var b=new Blob([JSON.stringify(S)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="dhaynes-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();t.textContent="Downloaded"}catch(e){t.textContent="Use Copy backup"}}
 if(t.id==="cp"){var tx=JSON.stringify(S);try{navigator.clipboard.writeText(tx).then(function(){t.textContent="Copied"},function(){document.getElementById("bk").value=tx;t.textContent="Copy from box"})}catch(e){document.getElementById("bk").value=tx;t.textContent="Copy from box"}}
 if(t.id==="rs"){try{var o=JSON.parse(val("bk"));if(o&&o.entries){o.settings=o.settings||{price:30};if(!o.settings.sizes)o.settings.sizes=[{n:"7L pababa",p:10},{n:"8-10L",p:15},{n:"25L",p:30,a:[35,45]}];o.cust=o.cust||{};o.audit=o.audit||[];S=o;log("Restore","Restored from backup");save();render()}else t.textContent="Not a valid backup"}catch(e){t.textContent="Not a valid backup"}}
