@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1450b8"><link rel="apple-touch-icon" href="icon-192.png">
+<title>Dhayne's Water Refilling Station</title>
+<style>
+:root{--bg:#eef5ff;--card:#fff;--ink:#0d2247;--mute:#5d7196;--line:#d5e4fb;--blue:#1e6fe8;--deep:#0a2a63;--red:#d6455a;--green:#12996f;--sh:0 6px 20px rgba(30,111,232,.12)}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1730;--card:#11264a;--ink:#e6efff;--mute:#8fa6cf;--line:#1d3763;--blue:#5b9bff;--red:#ff8597;--green:#4fd9ae;--sh:0 6px 20px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+.hero{background:linear-gradient(160deg,var(--deep),#1450b8 60%,var(--blue));color:#fff;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 28px;text-align:center}
+.hero h1{margin:0;font:600 26px ui-rounded,"Trebuchet MS",system-ui,sans-serif}.hero div{opacity:.9;font-size:14px}
+main{max-width:560px;margin:-14px auto 0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 96px)}
+.p{background:var(--card);border-radius:18px;padding:16px;margin:14px 0;box-shadow:var(--sh)}
+h2{margin:0 0 10px;font-size:18px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+input[type=checkbox]{width:20px;height:20px;margin:0}.ck{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.r{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.r:last-child{border:0}.r b{flex:1}.r input{width:78px;margin:0;text-align:center}
+button{font:inherit;border:0;border-radius:12px;padding:12px;width:100%;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--blue),#1450b8);margin-top:6px}
+button.g{background:var(--card);color:var(--blue);border:1.5px solid var(--line)}button:disabled{opacity:.5}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg button{margin:0;padding:9px 4px;font-size:14px;background:var(--card);color:var(--mute);border:1.5px solid var(--line)}.seg button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:4px;max-width:560px;margin:0 auto;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--card);border-top:1px solid var(--line);border-radius:20px 20px 0 0}
+.nav button{margin:0;background:none;color:var(--mute);box-shadow:none;padding:10px 0}.nav button.on{background:var(--blue);color:#fff}
+.tag{font-size:12px;padding:2px 10px;border-radius:99px;border:1.5px solid var(--blue);color:var(--blue)}
+.m{color:var(--mute);font-size:13px}.ok{color:var(--green);font-weight:700}.bad{color:var(--red)}.t{display:flex;justify-content:space-between;padding:2px 0}.t.big{font-size:20px;font-weight:700;border-top:2px dashed var(--line);margin-top:6px;padding-top:8px}
+.bar{height:6px;background:var(--line);border-radius:9px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}
+a{color:var(--blue)}
+</style></head><body>
+<header class="hero"><h1>Dhayne's</h1><div>Water Refilling Station</div></header>
+<main><div id="app"><div class="p">Loading...</div></div></main>
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+var F=window.FB,db,au,U=null,cat=null,mine=[],unsub=null,tab="order",type="refill",V="login",MSG="",ready=false,K="dhayne-cust",C={};
+var FM={q:{},dt:"",sl:"8AM-10AM",gate:false,call:false,ad:"",lm:"",sp:"",lat:null,lng:null,cn:"",cp:""};
+var SLOTS=["8AM-10AM","10AM-12PM","1PM-3PM","3PM-5PM"],TN={refill:"Refill",gallon:"New gallon",bottled:"Bottled water"};
+var FLOW={refill:["Pending Pickup","Picked Up","Refilling","Out for Delivery","Delivered","Completed"],gallon:["Pending","Preparing","Out for Delivery","Delivered","Completed"],bottled:["Pending","Preparing","Out for Delivery","Delivered","Completed"]};
+try{C=JSON.parse(localStorage.getItem(K)||"{}")}catch(e){}
+FM.cn=C.cn||"";FM.cp=C.cp||"";FM.ad=C.ad||"";FM.lm=C.lm||"";FM.lat=C.lat||null;FM.lng=C.lng||null;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function peso(n){return "₱"+Number(n).toLocaleString("en-PH")}
+function P(x){return '<div class="p">'+x+'</div>'}
+function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function dist(a,b,c,d){var R=6371000,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
+function fee(m){return m<=500?0:m<=1000?5:m<=2000?10:m<=3000?15:m<=5000?20:m<=8000?30:40+5*Math.ceil((m-8000)/1000)}
+function alog(a,d){if(db&&U)db.collection("audit").add({ts:firebase.firestore.FieldValue.serverTimestamp(),uid:U.uid,email:U.email||"",role:"customer",action:a,desc:d}).catch(function(){})}
+function types(){return ["refill","gallon","bottled"].filter(function(t){return cat&&(cat[t]||[]).length})}
+function calc(){var L=(cat&&cat[type])||[],sub=0,qty=0,its=[];L.forEach(function(x,i){var q=Math.min(99,Math.max(0,Math.floor(+FM.q[type+i]||0)));if(q){its.push({n:x.n,p:x.p,q:q});sub+=q*x.p;qty+=q}});
+var d=null,f=0;if(FM.lat!=null&&cat&&cat.lat!=null){d=dist(cat.lat,cat.lng,FM.lat,FM.lng);f=fee(d)}return{its:its,sub:sub,qty:qty,d:d,fee:f,total:sub+f}}
+function sumHTML(){var c=calc();return '<div class="t"><span>Subtotal</span><span>'+peso(c.sub)+'</span></div><div class="t"><span>Delivery fee'+(c.d!=null?' ('+(c.d/1000).toFixed(1)+' km)':'')+'</span><span>'+(c.d!=null?peso(c.fee):'Add your location')+'</span></div><div class="t big"><span>Total</span><span>'+peso(c.total)+'</span></div><div class="m">Pay cash on delivery (COD).</div>'}
+function orderHTML(){var ts=types();if(!cat||cat.lat==null||!ts.length)return P('<h2>Ordering is not open yet</h2><div class="m">Please check back soon.</div>');if(ts.indexOf(type)<0)type=ts[0];
+var L=cat[type];return P('<h2>What do you need?</h2><div class="seg">'+ts.map(function(t){return '<button data-ty="'+t+'" class="'+(t===type?"on":"")+'">'+TN[t]+'</button>'}).join("")+'</div>'+(type==="refill"?'<div class="m" style="margin-bottom:6px">We pick up your container, refill it, and deliver it back.</div>':'')+
+L.map(function(x,i){return '<div class="r"><b>'+esc(x.n)+'<div class="m">'+peso(x.p)+(type==="bottled"?" per case":" each")+'</div></b><input type="number" inputmode="numeric" min="0" max="99" id="q'+i+'" value="'+(FM.q[type+i]||"")+'" placeholder="0"></div>'}).join("")+(type==="bottled"&&cat.minCases?'<div class="m">Minimum order: '+cat.minCases+' cases</div>':''))+
+P('<h2>Delivery</h2><input id="cn" placeholder="Your name" value="'+esc(FM.cn)+'"><input id="cp" type="tel" placeholder="Mobile number" value="'+esc(FM.cp)+'"><textarea id="ad" rows="2" placeholder="Address (street, barangay)">'+esc(FM.ad)+'</textarea><input id="lm" placeholder="Landmark (required)" value="'+esc(FM.lm)+'">'+
+'<button class="g" id="gp" type="button">Use my current location</button><div class="m" id="gs" style="margin:6px 0 10px">'+(FM.lat!=null?'Location saved.':'Location needed to compute the delivery fee.')+'</div>'+
+'<div class="ck"><input type="checkbox" id="gate"'+(FM.gate?" checked":"")+'><label for="gate">Leave at gate</label></div><div class="ck"><input type="checkbox" id="call"'+(FM.call?" checked":"")+'><label for="call">Call before delivery</label></div><input id="sp" placeholder="Special instructions (optional)" value="'+esc(FM.sp)+'">'+
+'<div class="m">Delivery date and time</div><input type="date" id="dt" min="'+today()+'" value="'+(FM.dt||today())+'"><select id="sl">'+SLOTS.map(function(s){return '<option'+(s===FM.sl?" selected":"")+'>'+s+'</option>'}).join("")+'</select>')+
+P('<h2>Summary</h2><div id="sm">'+sumHTML()+'</div><button id="go"'+(U&&U.emailVerified?"":" disabled")+'>Place order</button><div id="msg" class="m" style="margin-top:8px">'+MSG+'</div>')}
+function mineHTML(){if(!mine.length)return P('<h2>My orders</h2><div class="m">No orders yet.</div>');return mine.map(function(o){var fl=FLOW[o.type]||FLOW.gallon,i=Math.max(0,fl.indexOf(o.status)),pc=o.status==="Cancelled"?0:Math.round((i+1)/fl.length*100);
+return P('<div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc(o.orderNo)+'</b><span class="tag">'+esc(o.status)+'</span></div><div class="m">'+TN[o.type]+' · '+esc(o.schedDate)+' '+esc(o.slot)+'</div><div>'+(o.items||[]).map(function(x){return x.q+" × "+esc(x.n)}).join(", ")+'</div><div class="m">Subtotal '+peso(o.subtotal)+' · Delivery '+peso(o.fee)+'</div><div><b>Total '+peso(o.total)+'</b> · '+(o.paid?'<span class="ok">Paid '+esc(o.payDate||"")+'</span>':'Unpaid (COD)')+'</div><div class="bar"><i style="width:'+pc+'%"></i></div>')}).join("")}
+function authHTML(){var t=V==="register"?"Create account":V==="reset"?"Reset password":"Log in";return P('<h2>'+t+'</h2><input id="em" type="email" placeholder="Email" autocomplete="email">'+(V==="reset"?'':'<input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="'+(V==="register"?"new-password":"current-password")+'">')+
+'<button id="au">'+t+'</button><div class="m" style="margin:8px 0">'+MSG+'</div>'+(V!=="login"?'<button class="g" data-v="login">Back to log in</button>':'<button class="g" data-v="register">New here? Create account</button><button class="g" data-v="reset">Forgot password</button>'))}
+function draw(){var a=$("app");if(!ready){a.innerHTML=P('<h2>Ordering is not open yet</h2><div class="m">Please check back soon.</div>');return}if(!U){a.innerHTML=authHTML();return}
+var b=U.emailVerified?"":P('<h2>Verify your email</h2><div class="m">We sent a link to '+esc(U.email)+'. Open it, then tap below. Check your spam folder too.</div><button id="vf">I verified my email</button><button class="g" id="rs">Resend email</button>');
+a.innerHTML=b+(tab==="order"?orderHTML():tab==="mine"?mineHTML():P('<h2>Account</h2><div>'+esc(U.email)+'</div><div class="m">'+(U.emailVerified?"Email verified":"Email not verified")+'</div><button class="g" id="lo">Log out</button>'))+
+'<div class="nav">'+[["order","Order"],["mine","My orders"],["acct","Account"]].map(function(x){return '<button data-t="'+x[0]+'" class="'+(tab===x[0]?"on":"")+'">'+x[1]+'</button>'}).join("")+'</div>'}
+function err(e){var c=(e&&e.code)||"";return /invalid|wrong|user-not/.test(c)?"Wrong email or password.":/already/.test(c)?"This email is already registered. Try logging in.":/weak/.test(c)?"Password must be at least 6 characters.":/too-many/.test(c)?"Too many tries. Please wait a few minutes.":/network/.test(c)?"No internet connection.":"Something went wrong. Please try again."}
+document.addEventListener("input",function(e){var i=e.target.id,v=e.target.value;if(/^q\d+$/.test(i)){FM.q[type+i.slice(1)]=v;$("sm").innerHTML=sumHTML()}else if(["cn","cp","ad","lm","sp","dt","sl"].indexOf(i)>=0)FM[i]=v;else if(i==="gate"||i==="call")FM[i]=e.target.checked});
+document.addEventListener("click",function(e){var t=e.target,d=t.dataset||{},i=t.id;
+if(d.ty){type=d.ty;draw();return}if(d.t){tab=d.t;MSG="";draw();return}if(d.v){V=d.v;MSG="";draw();return}
+if(i==="au"){var em=$("em").value.trim(),pw=$("pw")?$("pw").value:"";if(!em)return;MSG="";
+if(V==="reset")au.sendPasswordResetEmail(em).then(function(){MSG="Reset link sent. Check your email.";draw()}).catch(function(x){MSG=err(x);draw()});
+else if(V==="register")au.createUserWithEmailAndPassword(em,pw).then(function(c){c.user.sendEmailVerification();alog("Register","New customer account")}).catch(function(x){MSG=err(x);draw()});
+else au.signInWithEmailAndPassword(em,pw).then(function(){alog("Login","Customer login")}).catch(function(x){MSG=err(x);draw()});return}
+if(i==="lo"){au.signOut();return}if(i==="rs"){U.sendEmailVerification().then(function(){t.textContent="Sent! Check your email"}).catch(function(){t.textContent="Try again later"});return}
+if(i==="vf"){U.reload().then(function(){return U.getIdToken(true)}).then(function(){U=au.currentUser;draw()});return}
+if(i==="gp"){var gs=$("gs");gs.textContent="Finding your location...";if(!navigator.geolocation){gs.textContent="Location is not available on this phone.";return}
+navigator.geolocation.getCurrentPosition(function(p){FM.lat=p.coords.latitude;FM.lng=p.coords.longitude;gs.textContent="Location saved.";$("sm").innerHTML=sumHTML()},function(){gs.textContent="Could not get your location. Allow location access and try again."},{enableHighAccuracy:true,timeout:15000});return}
+if(i==="go"){var c=calc(),m=$("msg"),bad=function(s){m.innerHTML='<span class="bad">'+s+'</span>'};
+if(!c.its.length)return bad("Please enter how many you want.");
+if(type==="bottled"&&cat.minCases&&c.qty<cat.minCases)return bad("Minimum order is "+cat.minCases+" cases.");
+if(!FM.cn.trim()||FM.cp.replace(/\D/g,"").length<7||!FM.ad.trim())return bad("Please fill in your name, mobile number and address.");
+if(!FM.lm.trim())return bad("Please add a landmark.");if(c.d==null)return bad("Please tap Use my current location.");
+if(c.d>(cat.maxKm||15)*1000)return bad("Sorry, you are outside our delivery area ("+(cat.maxKm||15)+" km).");
+if((FM.dt||today())<today())return bad("Please choose today or a later date.");
+t.disabled=true;var no="DW-"+today().slice(5).replace("-","")+"-"+Math.random().toString(36).slice(2,6).toUpperCase();
+C={cn:FM.cn.trim(),cp:FM.cp.trim(),ad:FM.ad.trim(),lm:FM.lm.trim(),lat:FM.lat,lng:FM.lng};try{localStorage.setItem(K,JSON.stringify(C))}catch(x){}
+var nt=[];if(FM.gate)nt.push("Leave at gate");if(FM.call)nt.push("Call before delivery");
+db.collection("orders").add({uid:U.uid,orderNo:no,type:type,cname:C.cn,phone:C.cp,address:C.ad,landmark:C.lm,lat:C.lat,lng:C.lng,distanceM:Math.round(c.d),fee:c.fee,items:c.its,subtotal:c.sub,total:c.total,payment:"COD",paid:false,payDate:null,schedDate:FM.dt||today(),slot:FM.sl,notes:nt,special:FM.sp.trim().slice(0,200),status:FLOW[type][0],createdAt:firebase.firestore.FieldValue.serverTimestamp()})
+.then(function(){alog("Order placed",no+" "+TN[type]+" "+peso(c.total));FM.q={};FM.sp="";MSG='<span class="ok">Order sent! Order no. '+no+'</span>';tab="mine";draw()}).catch(function(){t.disabled=false;bad("Could not send. Check your internet and verify your email.")})}});
+function start(){if(!F||!window.firebase||String(F.apiKey||"").indexOf("PASTE")===0){draw();return}
+try{firebase.initializeApp(F);db=firebase.firestore();au=firebase.auth();ready=true;
+db.collection("settings").doc("catalog").onSnapshot(function(d){cat=d.exists?d.data():null;if(U&&tab==="order")draw()},function(){});
+au.onAuthStateChanged(function(u){U=u;if(unsub){unsub();unsub=null}mine=[];if(u){unsub=db.collection("orders").where("uid","==",u.uid).onSnapshot(function(s){mine=s.docs.map(function(d){var o=d.data();o.id=d.id;return o}).sort(function(a,b){return((b.createdAt&&b.createdAt.seconds)||9e9)-((a.createdAt&&a.createdAt.seconds)||9e9)});if(tab==="mine")draw()},function(){})}draw()})}
+catch(e){$("app").innerHTML=P("Could not start. Please reload.")}}
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+start();
+</script></body></html>
